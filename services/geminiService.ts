@@ -3,32 +3,35 @@ import { GoogleGenAI, Type } from "@google/genai";
 import { StrategyConfig, PineScriptOutput } from "../types";
 
 export const generateXAUIndicator = async (config: StrategyConfig): Promise<PineScriptOutput> => {
+  // Lấy API Key trực tiếp từ process.env
   const apiKey = process.env.API_KEY;
 
-  if (!apiKey || apiKey.trim() === "") {
+  if (!apiKey || apiKey.length < 10) {
     throw new Error("API_KEY_MISSING");
   }
 
-  // Create instance inside the function to ensure the latest API key from process.env is used.
+  // Khởi tạo instance mới mỗi lần gọi để đảm bảo dùng Key mới nhất
   const ai = new GoogleGenAI({ apiKey });
 
-  const prompt = `Act as a world-class Quantitative Forex Trader specializing in XAUUSD scalping. 
-  Generate a professional Pine Script (Version 5) indicator based on the following configuration:
-  - Timeframe target: ${config.timeframe}
-  - Risk/Reward: 1:${config.riskRatio}
-  - Strategy Modules: ${config.useSMC ? 'Smart Money Concepts (FVG, BOS, OB)' : ''}, ${config.useRSI ? 'Momentum RSI' : ''}, ${config.volatilityFilter ? 'ATR-based Volatility Filter' : ''}
+  const prompt = `Act as a senior Quantitative Developer and Gold Scalper. 
+  Create a high-probability Pine Script V5 indicator for XAUUSD on ${config.timeframe} timeframe.
   
-  The script MUST include:
-  1. Multi-EMA trend identification (21, 50, 200).
-  2. ATR-based dynamic Stop Loss and Take Profit levels.
-  3. Visual markers (Labels) for Entry (Long/Short), SL, and TP.
-  4. Specialized handling for Gold's high volatility (avoiding whipsaws).
+  CORE STRATEGY REQUIREMENTS:
+  1. ${config.useSMC ? 'Smart Money Concepts: Detect BOS (Break of Structure), CHoCH (Change of Character), and FVG (Fair Value Gap) zones.' : ''}
+  2. Trend Filter: Use a combination of 3 EMAs (8, 21, 50) and a 200 EMA for macro trend.
+  3. ${config.useRSI ? 'Momentum: Identify RSI Divergence in Oversold/Overbought zones.' : ''}
+  4. ${config.volatilityFilter ? 'Volatility: Use ATR (Average True Range) to filter out low-volume periods and avoid Gold whipsaws.' : ''}
+  5. Risk Management: 
+     - Dynamic Stop Loss (SL) based on ATR (1.5x - 2x ATR).
+     - Take Profit (TP) with a fixed ${config.riskRatio}:1 Reward-to-Risk ratio.
+  6. Visuals: Plot clear "BUY/SELL" labels, draw SL/TP target lines, and highlight imbalance zones.
   
-  Respond ONLY with a JSON object following this schema:
+  OUTPUT FORMAT:
+  Return ONLY a JSON object:
   {
-    "code": "The complete Pine Script code",
-    "explanation": "Brief breakdown of why this works for XAUUSD scalping",
-    "keyFeatures": ["List of 3-5 technical features implemented"]
+    "code": "Full Pine Script code here",
+    "explanation": "Professional breakdown of the entry/exit logic",
+    "keyFeatures": ["Feature 1", "Feature 2", "Feature 3"]
   }`;
 
   try {
@@ -52,19 +55,13 @@ export const generateXAUIndicator = async (config: StrategyConfig): Promise<Pine
       }
     });
 
-    if (!response.text) {
-      throw new Error("Empty response from AI model.");
-    }
-
+    if (!response.text) throw new Error("AI không phản hồi nội dung.");
     return JSON.parse(response.text);
   } catch (error: any) {
-    console.error("Gemini API Error:", error);
-    
-    // Catch specific error for missing entity (often related to key issues)
-    if (error.message?.includes("Requested entity was not found")) {
+    console.error("Gemini Error Details:", error);
+    if (error.message?.includes("entity was not found") || error.message?.includes("API key")) {
       throw new Error("API_KEY_INVALID");
     }
-    
     throw error;
   }
 };

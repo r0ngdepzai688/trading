@@ -1,0 +1,5 @@
+{
+  "name": "XAUUSD Scalping Pro Assistant",
+  "description": "A high-performance trading assistant that generates professional Pine Script indicators for XAUUSD scalping (M1-M15) using SMC, RSI, and ATR-based volatility strategies.",
+  "requestFramePermissions": []
+}

@@ -2,9 +2,11 @@
 import { GoogleGenAI, Type } from "@google/genai";
 import { StrategyConfig, PineScriptOutput } from "../types";
 
-const ai = new GoogleGenAI({ apiKey: process.env.API_KEY || "" });
-
 export const generateXAUIndicator = async (config: StrategyConfig): Promise<PineScriptOutput> => {
+  // Create instance inside the function as per guidelines to pick up updated process.env.API_KEY
+  // Use process.env.API_KEY directly as a hard requirement.
+  const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+
   const prompt = `Act as a world-class Quantitative Forex Trader specializing in XAUUSD scalping. 
   Generate a professional Pine Script (Version 5) indicator based on the following configuration:
   - Timeframe target: ${config.timeframe}
@@ -45,9 +47,19 @@ export const generateXAUIndicator = async (config: StrategyConfig): Promise<Pine
       }
     });
 
+    if (!response.text) {
+      throw new Error("Empty response from AI model.");
+    }
+
     return JSON.parse(response.text);
-  } catch (error) {
-    console.error("Error generating indicator:", error);
+  } catch (error: any) {
+    console.error("Gemini API Error:", error);
+    
+    // Check for common API errors as per guidelines
+    if (error.message?.includes("Requested entity was not found")) {
+      throw new Error("API_KEY_NOT_FOUND");
+    }
+    
     throw error;
   }
 };

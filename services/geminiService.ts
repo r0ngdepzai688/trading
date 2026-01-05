@@ -3,15 +3,8 @@ import { GoogleGenAI, Type } from "@google/genai";
 import { StrategyConfig, PineScriptOutput } from "../types";
 
 export const generateXAUIndicator = async (config: StrategyConfig): Promise<PineScriptOutput> => {
-  // Lấy API Key trực tiếp từ process.env
-  const apiKey = process.env.API_KEY;
-
-  if (!apiKey || apiKey.length < 10) {
-    throw new Error("API_KEY_MISSING");
-  }
-
-  // Khởi tạo instance mới mỗi lần gọi để đảm bảo dùng Key mới nhất
-  const ai = new GoogleGenAI({ apiKey });
+  // Luôn tạo instance mới để lấy API_KEY mới nhất từ môi trường
+  const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
 
   const prompt = `Act as a senior Quantitative Developer and Gold Scalper. 
   Create a high-probability Pine Script V5 indicator for XAUUSD on ${config.timeframe} timeframe.
@@ -58,10 +51,14 @@ export const generateXAUIndicator = async (config: StrategyConfig): Promise<Pine
     if (!response.text) throw new Error("AI không phản hồi nội dung.");
     return JSON.parse(response.text);
   } catch (error: any) {
-    console.error("Gemini Error Details:", error);
-    if (error.message?.includes("entity was not found") || error.message?.includes("API key")) {
-      throw new Error("API_KEY_INVALID");
+    const errorMessage = error.message || "";
+    console.error("Gemini Error Details:", errorMessage);
+    
+    // Theo yêu cầu: Nếu lỗi chứa "Requested entity was not found.", báo hiệu cần chọn lại Key
+    if (errorMessage.includes("Requested entity was not found") || errorMessage.includes("API key not found") || errorMessage.includes("API Key must be set")) {
+      throw new Error("API_KEY_RESET_REQUIRED");
     }
+    
     throw error;
   }
 };
